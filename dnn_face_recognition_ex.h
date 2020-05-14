@@ -4,10 +4,19 @@ extern "C"
 {
 #endif
 
+#ifdef _WIN32
+
 #ifdef BUILD_DLL
 #define MY_API __declspec(dllexport)
 #else
 #define MY_API __declspec(dllimport)
+#endif
+
+#else
+
+#define BUILD 1
+#define MY_API __attribute__((visibility("default")))
+
 #endif
 
     // 人脸比对函数
