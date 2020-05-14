@@ -219,7 +219,7 @@ public:
 // load resnet v1.
 resnet dnnNet;
 
-#ifndef BUILD
+#ifndef BUILD_DLL
 
 int main()
 try
@@ -229,11 +229,13 @@ try
 	load_image(cmp, "dst.jpg");
 	cout << "compare result of two images:" << dnnNet.compare(img, cmp, 0.6) << endl;
 	cin.get();
+	return 0;
 }
 catch (std::exception &e)
 {
 	cout << e.what() << endl;
 	cin.get();
+	return -1;
 }
 
 #else
@@ -241,6 +243,7 @@ catch (std::exception &e)
 int main()
 {
 	cout << "Load faceCompare.lib succeed." << endl;
+	return 0;
 }
 
 #endif

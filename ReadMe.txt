@@ -13,4 +13,13 @@ dlib19.19.0_debug_64bit_msvc1900.lib
 
 dlib19.19.0_release_64bit_msvc1900.lib
 
+注意事项：
+
+（1）需安装jpeg和png库:
+
+sudo apt install libpng-dev
+sudo apt install libjpeg-dev
+
+（2）Makefile需指定“dlib-19.19/dlib/all/source.cpp”代码位置.
+
 2020-5-12

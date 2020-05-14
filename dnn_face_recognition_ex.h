@@ -1,3 +1,5 @@
+#ifndef __facecompare
+#define __facecompare
 
 #ifdef __cplusplus
 extern "C"
@@ -14,8 +16,11 @@ extern "C"
 
 #else
 
-#define BUILD 1
+#ifdef BUILD_DLL
 #define MY_API __attribute__((visibility("default")))
+#else
+#define MY_API 
+#endif
 
 #endif
 
@@ -26,3 +31,5 @@ extern "C"
 #ifdef __cplusplus
 }
 #endif
+#endif
+
