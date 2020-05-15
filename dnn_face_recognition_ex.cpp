@@ -167,9 +167,9 @@ public:
 			detector = get_frontal_face_detector();
 			// We will also use a face landmarking model to align faces to a standard pose.
 			// (see face_landmark_detection_ex.cpp for an introduction)
-			deserialize("shape_predictor_5_face_landmarks.dat") >> sp;
+			deserialize("./shape_predictor_5_face_landmarks.dat") >> sp;
 			// And finally we load the DNN responsible for face recognition.
-			deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
+			deserialize("./dlib_face_recognition_resnet_model_v1.dat") >> net;
 			init = true;
 		}
 		catch (std::exception &e)
@@ -273,18 +273,18 @@ int main()
 #endif
 
 // faceCompare 用于导出的人像比对API.
-bool faceCompare(unsigned char *src, int w1, int h1, int r1,
-				 unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
+int faceCompare(unsigned char *src, int w1, int h1, int r1,
+				unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
 {
 	return dnnNet.isOK() ? flip
 							   ? dnnNet.compare(image(src, w1, h1, r1).flipud(), image(cmp, w2, h2, r2).flipud(), t)
 							   : dnnNet.compare(image(src, w1, h1, r1), image(cmp, w2, h2, r2), t)
-						 : false;
+						 : -1;
 }
 
 // faceCompare_s 不会对输入的字节进行任何修改.
-bool faceCompare_s(const unsigned char *src, int w1, int h1, int r1,
-				   const unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
+int faceCompare_s(const unsigned char *src, int w1, int h1, int r1,
+				  const unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
 {
 	if (dnnNet.isOK())
 	{
@@ -298,5 +298,5 @@ bool faceCompare_s(const unsigned char *src, int w1, int h1, int r1,
 		delete[] p2;
 		return r;
 	}
-	return false;
+	return -1;
 }
