@@ -80,21 +80,34 @@ using anet_type = loss_metric<fc_no_bias<128, avg_pool_everything<
 class image : noncopyable
 {
 public:
-	const unsigned char *data; // 图像数据
-	int width_;				   // 图像宽度
-	int height_;			   // 图像高度
-	int output_components_;	   // 每行字节数
-	int channel_;			   // 每像素字节
+	unsigned char *data;	// 图像数据
+	int width_;				// 图像宽度
+	int height_;			// 图像高度
+	int output_components_; // 每行字节数
+	int channel_;			// 每像素字节
 
-	image(const unsigned char *src, int w, int h, int r, int ch = 3)
-		: data(src), width_(w), height_(h), output_components_(r), channel_(ch) {}
+	image(unsigned char *src, int w, int h, int r)
+		: data(src), width_(w), height_(h), output_components_(r), channel_(r / w) {}
 	matrix<rgb_pixel> &cvtToMatrix(matrix<rgb_pixel> &img) const;
 	bool is_gray() const { return channel_ == 1; }
 	bool is_rgb() const { return channel_ == 3; }
 	bool is_rgba() const { return channel_ == 4; }
-	const unsigned char *get_row(unsigned long i) const
+	unsigned char *get_row(unsigned long i) const
 	{
 		return data + i * output_components_;
+	}
+	image &flipud()
+	{
+		int h = height_, r = output_components_;
+		unsigned char *p = new unsigned char[r];
+		for (int i = 0; i < h / 2; ++i)
+		{
+			memcpy(p, data + i * r, r);
+			memcpy(data + i * r, data + (h - 1 - i) * r, r);
+			memcpy(data + (h - 1 - i) * r, p, r);
+		}
+		delete[] p;
+		return *this;
 	}
 };
 
@@ -105,7 +118,7 @@ matrix<rgb_pixel> &image::cvtToMatrix(matrix<rgb_pixel> &img) const
 	t.set_size(height_, width_);
 	for (unsigned n = 0; n < height_; n++)
 	{
-		const unsigned char *v = get_row(n);
+		unsigned char *v = get_row(n);
 		for (unsigned m = 0; m < width_; m++)
 		{
 			if (is_gray())
@@ -142,18 +155,28 @@ private:
 	frontal_face_detector detector;
 	shape_predictor sp;
 	anet_type net;
+	bool init;
 
 public:
 	resnet()
 	{
-		// The first thing we are going to do is load all our models.  First, since we need to
-		// find faces in the image we will need a face detector:
-		detector = get_frontal_face_detector();
-		// We will also use a face landmarking model to align faces to a standard pose.
-		// (see face_landmark_detection_ex.cpp for an introduction)
-		deserialize("shape_predictor_5_face_landmarks.dat") >> sp;
-		// And finally we load the DNN responsible for face recognition.
-		deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
+		try
+		{
+			// The first thing we are going to do is load all our models.  First, since we need to
+			// find faces in the image we will need a face detector:
+			detector = get_frontal_face_detector();
+			// We will also use a face landmarking model to align faces to a standard pose.
+			// (see face_landmark_detection_ex.cpp for an introduction)
+			deserialize("shape_predictor_5_face_landmarks.dat") >> sp;
+			// And finally we load the DNN responsible for face recognition.
+			deserialize("dlib_face_recognition_resnet_model_v1.dat") >> net;
+			init = true;
+		}
+		catch (std::exception &e)
+		{
+			cout << e.what() << endl;
+			init = false;
+		}
 	}
 	// Run the face detector on the image of our action heroes, and for each face extract a
 	// copy that has been normalized to 150x150 pixels in size and appropriately rotated
@@ -214,6 +237,7 @@ public:
 		cmp.cvtToMatrix(m2);
 		return compare(m1, m2, t);
 	}
+	bool isOK() { return init; }
 };
 
 // load resnet v1.
@@ -249,8 +273,11 @@ int main()
 #endif
 
 // faceCompare 用于导出的人像比对API.
-bool faceCompare(const unsigned char *src, int w1, int h1, int r1,
-				 const unsigned char *cmp, int w2, int h2, int r2, double t)
+bool faceCompare(unsigned char *src, int w1, int h1, int r1,
+				 unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
 {
-	return dnnNet.compare(image(src, w1, h1, r1, r1 / w1), image(cmp, w2, h2, r2, r2 / w2), t);
+	return dnnNet.isOK() ? flip
+							   ? dnnNet.compare(image(src, w1, h1, r1).flipud(), image(cmp, w2, h2, r2).flipud(), t)
+							   : dnnNet.compare(image(src, w1, h1, r1), image(cmp, w2, h2, r2), t)
+						 : false;
 }
