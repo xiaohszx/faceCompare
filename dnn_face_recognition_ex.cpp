@@ -281,3 +281,22 @@ bool faceCompare(unsigned char *src, int w1, int h1, int r1,
 							   : dnnNet.compare(image(src, w1, h1, r1), image(cmp, w2, h2, r2), t)
 						 : false;
 }
+
+// faceCompare_s 不会对输入的字节进行任何修改.
+bool faceCompare_s(const unsigned char *src, int w1, int h1, int r1,
+				   const unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
+{
+	if (dnnNet.isOK())
+	{
+		unsigned char *p1 = new unsigned char[h1 * r1], *p2 = new unsigned char[h2 * r2];
+		memcpy(p1, src, h1 * r1);
+		memcpy(p2, cmp, h2 * r2);
+		bool r = flip
+					 ? dnnNet.compare(image(p1, w1, h1, r1).flipud(), image(p2, w2, h2, r2).flipud(), t)
+					 : dnnNet.compare(image(p1, w1, h1, r1), image(p2, w2, h2, r2), t);
+		delete[] p1;
+		delete[] p2;
+		return r;
+	}
+	return false;
+}

@@ -22,7 +22,7 @@ int main(int argc, const char *argv[])
 		BYTE *src = (BYTE *)img.GetBits() + (img.GetHeight() - 1) * img.GetPitch();
 		BYTE *dst = (BYTE *)cmp.GetBits() + (cmp.GetHeight() - 1) * cmp.GetPitch();
 		clock_t t = clock();
-		bool r = faceCompare(src, img.GetWidth(), img.GetHeight(), abs(img.GetPitch()),
+		bool r = faceCompare_s(src, img.GetWidth(), img.GetHeight(), abs(img.GetPitch()),
 							 dst, cmp.GetWidth(), cmp.GetHeight(), abs(cmp.GetPitch()), 
 							threshold, true);
 		printf("The result of faceCompare is %d. Using %d ms.\n", r, int(clock() - t));
