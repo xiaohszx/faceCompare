@@ -85,6 +85,7 @@ public:
 	int height_;			// 图像高度
 	int output_components_; // 每行字节数
 	int channel_;			// 每像素字节
+	bool rgb_;				// RGB顺序
 
 	image(unsigned char *src, int w, int h, int r)
 		: data(src), width_(w), height_(h), output_components_(r), channel_(r / w) {}
@@ -116,6 +117,7 @@ matrix<rgb_pixel> &image::cvtToMatrix(matrix<rgb_pixel> &img) const
 {
 	image_view<matrix<rgb_pixel>> t(img);
 	t.set_size(height_, width_);
+	int r = 2 * (rgb_ ? 0 : 1), b = 2 - r;
 	for (unsigned n = 0; n < height_; n++)
 	{
 		unsigned char *v = get_row(n);
@@ -129,18 +131,18 @@ matrix<rgb_pixel> &image::cvtToMatrix(matrix<rgb_pixel> &img) const
 			else if (is_rgba())
 			{
 				rgb_alpha_pixel p;
-				p.red = v[m * 4];
+				p.red = v[m * 4 + r];
 				p.green = v[m * 4 + 1];
-				p.blue = v[m * 4 + 2];
+				p.blue = v[m * 4 + b];
 				p.alpha = v[m * 4 + 3];
 				assign_pixel(t[n][m], p);
 			}
 			else // if ( is_rgb() )
 			{
 				rgb_pixel p;
-				p.red = v[m * 3];
+				p.red = v[m * 3 + r];
 				p.green = v[m * 3 + 1];
-				p.blue = v[m * 3 + 2];
+				p.blue = v[m * 3 + b];
 				assign_pixel(t[n][m], p);
 			}
 		}
@@ -235,6 +237,10 @@ public:
 		matrix<rgb_pixel> m1, m2;
 		img.cvtToMatrix(m1);
 		cmp.cvtToMatrix(m2);
+#ifdef _DEBUG
+		save_jpeg(m1, "./output1.jpg");
+		save_jpeg(m2, "./output2.jpg");
+#endif
 		return compare(m1, m2, t);
 	}
 	bool isOK() { return init; }
@@ -274,26 +280,28 @@ int main()
 
 // faceCompare 用于导出的人像比对API.
 int faceCompare(unsigned char *src, int w1, int h1, int r1,
-				unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
+				unsigned char *cmp, int w2, int h2, int r2, double t, bool flip, bool rgb)
 {
-	return dnnNet.isOK() ? flip
-							   ? dnnNet.compare(image(src, w1, h1, r1).flipud(), image(cmp, w2, h2, r2).flipud(), t)
-							   : dnnNet.compare(image(src, w1, h1, r1), image(cmp, w2, h2, r2), t)
-						 : -1;
+	if (dnnNet.isOK())
+	{
+		bool r = flip
+					 ? dnnNet.compare(image(src, w1, h1, r1).flipud(), image(cmp, w2, h2, r2).flipud(), t)
+					 : dnnNet.compare(image(src, w1, h1, r1), image(cmp, w2, h2, r2), t);
+		return r ? 1 : 0;
+	}
+	return -1;
 }
 
 // faceCompare_s 不会对输入的字节进行任何修改.
 int faceCompare_s(const unsigned char *src, int w1, int h1, int r1,
-				  const unsigned char *cmp, int w2, int h2, int r2, double t, bool flip)
+				  const unsigned char *cmp, int w2, int h2, int r2, double t, bool flip, bool rgb)
 {
 	if (dnnNet.isOK())
 	{
 		unsigned char *p1 = new unsigned char[h1 * r1], *p2 = new unsigned char[h2 * r2];
 		memcpy(p1, src, h1 * r1);
 		memcpy(p2, cmp, h2 * r2);
-		bool r = flip
-					 ? dnnNet.compare(image(p1, w1, h1, r1).flipud(), image(p2, w2, h2, r2).flipud(), t)
-					 : dnnNet.compare(image(p1, w1, h1, r1), image(p2, w2, h2, r2), t);
+		int r = faceCompare(p1, w1, h1, r1, p2, w2, h2, r2, t, flip, rgb);
 		delete[] p1;
 		delete[] p2;
 		return r;

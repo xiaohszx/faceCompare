@@ -24,7 +24,7 @@ int main(int argc, const char *argv[])
 		clock_t t = clock();
 		bool r = faceCompare_s(src, img.GetWidth(), img.GetHeight(), abs(img.GetPitch()),
 							 dst, cmp.GetWidth(), cmp.GetHeight(), abs(cmp.GetPitch()), 
-							threshold, true);
+							threshold, true, true);
 		printf("The result of faceCompare is %d. Using %d ms.\n", r, int(clock() - t));
 	}
 	else
